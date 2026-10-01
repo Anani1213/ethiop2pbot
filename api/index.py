@@ -6,7 +6,6 @@ app = Flask(__name__)
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8922741286:AAHHHDeVMNbmh-9RWG0hjY-Uza2Gxp0dRzo")
 
-# ሁሉንም ሊመጡ የሚችሉ የ Route ጥሪዎችን እንዲቀበል አድርገነዋል
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/api/index', methods=['GET', 'POST'])
 @app.route('/api/index.py', methods=['GET', 'POST'])
@@ -21,16 +20,24 @@ def webhook(path=""):
         if data and "message" in data:
             message = data["message"]
             chat_id = message["chat"]["id"]
-            first_name = message["from"].get("first_name", "")
+            first_name = message["from"].get("first_name", "User")
             text = message.get("text", "")
 
             if text.startswith("/start"):
-                reply_text = f"hi {first_name} wellcome to ethio p2p click open p2p and start exchange"
+                # ማራኪ እና ውብ የሆነ የፅሁፍ ዲዛይን ከ Emoji ጋር
+                reply_text = (
+                    f"👋 <b>Hi {first_name}!</b>\n\n"
+                    f"Welcome to <b>Ethio P2P Exchange</b>! 🇪🇹✨\n\n"
+                    f"🚀 Your trusted, fast, and secure peer-to-peer exchange platform.\n\n"
+                    f"👇 <b>How to start:</b>\n"
+                    f"Click the <b>« Open p2p »</b> button at the bottom of your screen to open the app and start exchanging! 📲💱"
+                )
                 
                 telegram_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
                 payload = {
                     "chat_id": chat_id,
-                    "text": reply_text
+                    "text": reply_text,
+                    "parse_mode": "HTML"
                 }
                 requests.post(telegram_url, json=payload)
 
