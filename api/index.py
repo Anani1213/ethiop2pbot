@@ -1,28 +1,43 @@
 import os
-from flask import Flask, request
-import telebot
-
-TOKEN = os.getenv("BOT_TOKEN")
-bot = telebot.TeleBot(TOKEN)
+import requests
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    name = message.from_user.first_name if message.from_user else ""
-    text = f"hi {name} wellcome to ethio p2p click open p2p and start exchange"
-    bot.reply_to(message, text)
+# ከ Vercel Environment Variable ወይም ቀጥታ Token ይወስዳል
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8922741286:AAHHHDeVMNbmh-9RWG0hjY-Uza2Gxp0dRzo")
 
-# ማንኛውንም የ Vercel Route ለማስተናገድ
-@app.route('/', defaults={'path': ''}, methods=['POST', 'GET'])
-@app.route('/<path:path>', methods=['POST', 'GET'])
-def main_handler(path):
-    if request.method == 'POST':
-        try:
-            json_string = request.get_data().decode('utf-8')
-            update = telebot.types.Update.de_json(json_string)
-            bot.process_new_updates([update])
-            return 'OK', 200
-        except Exception as e:
-            return str(e), 500
-    return "Bot is running on Vercel!", 200
+@app.route('/', methods=['GET'])
+def home():
+    return "Ethio P2P Bot is running!", 200
+
+@app.route('/api/index', methods=['POST'])
+@app.route('/', methods=['POST'])
+def webhook():
+    try:
+        data = request.get_json(force=True)
+        
+        # ከቴሌግራም መልእክት ሲመጣ
+        if data and "message" in data:
+            message = data["message"]
+            chat_id = message["chat"]["id"]
+            first_name = message["from"].get("first_name", "")
+            text = message.get("text", "")
+
+            # /start ሲባል የሚላክ
+            if text.startswith("/start"):
+                reply_text = f"hi {first_name} wellcome to ethio p2p click open p2p and start exchange"
+                
+                # ቀጥታ ለቴሌግራም API መልእክቱን መላክ
+                telegram_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+                payload = {
+                    "chat_id": chat_id,
+                    "text": reply_text
+                }
+                requests.post(telegram_url, json=payload)
+
+        return jsonify({"status": "ok"}), 200
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 200
